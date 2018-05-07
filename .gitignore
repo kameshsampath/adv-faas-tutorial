@@ -1,0 +1,9 @@
+**/dependency-reduced-pom.xml
+**/.settings
+**/.classspath
+**/.project
+**/.vscode
+**/.sts4-cache
+**/.idea
+**/*.iml
+**/target

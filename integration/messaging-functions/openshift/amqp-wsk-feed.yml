@@ -1,0 +1,78 @@
+---
+apiVersion: v1
+kind: Service
+metadata:
+  creationTimestamp: null
+  labels:
+    app: amqp-wsk-feed
+  name: amqp-wsk-feed
+spec:
+  ports:
+  - name: amqp-wsk-feed-8080
+    port: 8080
+    targetPort: 8080
+  selector:
+    app: amqp-wsk-feed
+status:
+  loadBalancer: {}
+---
+apiVersion: route.openshift.io/v1
+kind: Route
+metadata:
+  creationTimestamp: null
+  labels:
+    app: amqp-wsk-feed
+  name: amqp-wsk-feed
+spec:
+  host: ""
+  to:
+    kind: Service
+    name: amqp-wsk-feed
+    weight: null
+status:
+  ingress: null
+---
+apiVersion: apps.openshift.io/v1
+kind: DeploymentConfig
+metadata:
+  creationTimestamp: null
+  labels:
+    app: amqp-wsk-feed
+  name: amqp-wsk-feed
+spec:
+  replicas: 1
+  strategy:
+    resources: {}
+  template:
+    metadata:
+      creationTimestamp: null
+      labels:
+        app: amqp-wsk-feed
+      name: amqp-wsk-feed
+    spec:
+      containers:
+      - image: docker.io/kameshsampath/amqp-wsk-feed
+        imagePullPolicy: IfNotPresent
+        livenessProbe:
+          httpGet:
+            path: /health
+            port: 8080
+          initialDelaySeconds: 5
+          timeoutSeconds: 5
+        name: amqp-wsk-feed
+        readinessProbe:
+          httpGet:
+            path: /health
+            port: 8080
+          initialDelaySeconds: 5
+          timeoutSeconds: 5
+        resources: {}
+  test: false
+  triggers: null
+status:
+  availableReplicas: 0
+  latestVersion: 0
+  observedGeneration: 0
+  replicas: 0
+  unavailableReplicas: 0
+  updatedReplicas: 0
