@@ -59,24 +59,11 @@ oc apply -f openshift/apache-artemis.yml {conum-guard-sh} # <1>
 
 [source,sh,subs=attributes+]
 ----
-oc apply -f openshift/amqp-wsk-feed.yml {conum-guard-sh} # <1>
+git clone https://github.com/cliffjansen/amqp-wsk-feed.git
+cd amqp-wsk-feed
+oc project openwhisk
+./deploy/ocWhiskSystem.sh {conum-guard-sh} # <1>
 ----
-
-<1> This will deploy OpenWhisk feed provider for AMQP
-
-==== Set Environment Variables
-
-The Feed Provider needs to know the `OpenWhisk API Host` to perform the triggers, hence we need to set the environment value `ROUTER_HOST`
-
-[source,sh,subs=attributes+]
-----
-API_HOST=$(oc get route/openwhisk --template="{{.spec.host}}" --namespace openwhisk)
-oc set env dc/amqp-wsk-feed ROUTER_HOST="${API_HOST}"
-----
-
-NOTE: 
-
-* Above example assumes that OpenWhisk has been deployed in namespace called `openwhisk`, if you have deployed OpenWhisk in different namespace then alter the `--namespace` url to point to right namespace
 
 ==== Create Package
 
@@ -84,25 +71,12 @@ All the functions that will be created for the split, sort, upper case and sende
 
 [source,sh,subs=attributes+]
 ----
-FEED_URL=$(oc get route/amqp-wsk-feed --template="{{.spec.host}}" --namespace msgdemo)
-wsk -i package update -p brokerHost 'apache-artemis.msgdemo' -p brokerPort '5672' -p rhea_options '{"host": "apache-artemis.msgdemo", "port": 5672 }' -p provider_endpoint http://$FEED_URL/amqp  msgdemo
+wsk -i package update -p brokerHost 'apache-artemis.msgdemo' -p brokerPort '5672' -p connection_options '{"host": "apache-artemis.msgdemo", "port": 5672 }' msgdemo
 ----
 
 - The Message Broker host, if you have deployed <<deploy-artemis>> in the same OpenShift project or update the host name to point to broker url 
 - The AMQP port of the broker which bu default is `5672`
 - The https://github.com/amqp/rhea[AMQP/rhea] module options that is required by the provider to connect to Message Broker
-
-=== Deploy AMQP Feed Action
-
-[source,sh,subs=attributes+]
-----
-cd /tmp 
-git clone https://github.com/kameshsampath/amqp-wsk-feed -b openshift
-cd amqp-wsk-feed/action
-( rm -f /tmp/foo.zip && zip -qr /tmp/foo.zip * )
-wsk -i action update msgdemo/amqpfd -a feed true --kind nodejs:8 /tmp/foo.zip
-cd $PROJECT_HOME
-----
 
 === Split, Sort, Upper Case and Sender Functions
 
@@ -353,13 +327,44 @@ The trigger is responsible for connecting rule with feeds, in this case to conne
 
 [source,sh,subs=attributes+]
 ----
-wsk -i trigger create trig_queue_99 --feed msgdemo/amqpfd -p address queue_99 {conum-guard-sh} # <1>
+wsk -i trigger create trig_queue_99 --feed /whisk.system/amqp/amqpFeed  -p address queue_99 -p connection_options '{"host": "apache-artemis.msgdemo", "port": 5672 }' {conum-guard-sh} # <1>
 wsk -i action update splitsortucase --sequence msgdemo/splitter,msgdemo/uppercase,msgdemo/sorter,msgdemo/msgsender 
 wsk -i rule update rule_splitsortucase trig_queue_99 splitsortucase {conum-guard-sh} # <2>
 ----
 
-<1> Create a trigger with feed as `msgdemo/amqpfd` listening to messaging address `queue_99`
+<1> Create a trigger with feed as `/whisk.system/amqp/amqpFeed` listening to messaging address `queue_99`
 <2> A Sequence of actions that will receive the `text` from the Queue queue_99, then will split, sort, uppercase the next strings and send it to the destination configured via `replyTo`
+
+=== Testing 
+[source,sh,subs=attributes+]
+----
+cd $PROJECT_HOME
+cd integration/messaging-functions/solutions/test
+npm install rhea
+----
+
+==== Terminal I
+
+[source,sh,subs=attributes+]
+----
+ARTEMIS_IP=$(minishift ip)
+ARTEMIS_PORT=$(oc get svc apache-artemis -o=jsonpath='{.spec.ports[0].nodePort}')
+node demorecv.js $ARTEMIS_IP $ARTEMIS_PORT replyQ99 {conum-guard-sh} # <1>
+----
+
+<1> **replyQ99**  is the messaging destination where the response will be posted (**replyTo** destination described above)
+
+==== Terminal II
+
+[source,sh,subs=attributes+]
+----
+ARTEMIS_IP=$(minishift ip)
+ARTEMIS_PORT=$(oc get svc apache-artemis -o=jsonpath='{.spec.ports[0].nodePort}')
+node demosend.js $ARTEMIS_IP $ARTEMIS_PORT queue_99 '{ "text": "football,cricket,basketball,rugby", "replyTo": "replyQ99"}' {conum-guard-sh} # <1>
+wsk -i activation poll 
+----
+
+<1> **queue_99** is the address where we have configured the trigger,**replyQ99**  is the messaging destination where the response will be posted (**replyTo** destination described above)
 
 === Utils
 
