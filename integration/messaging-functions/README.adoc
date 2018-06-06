@@ -110,8 +110,7 @@ Lets deploy the function using the following command,
 
 [source,sh,subs=attributes+]
 ----
-cd $PROJECT_HOME/
-cd integration/messaging-functions/solutions
+cd $PROJECT_HOME/integration/messaging-functions/solutions
 wsk -i action update msgdemo/splitter split.py
 ----
 
@@ -182,9 +181,7 @@ Update the FunctionAppTest testFunction method with code:
 ===== Build Uppercase Action
 [source,sh,subs=attributes+]
 ----
-cd $PROJECT_HOME/
-cd integration/messaging-functions/solutions
-cd uppercase
+cd $PROJECT_HOME/integration/messaging-functions/solutions/uppercase
 mvn clean package
 wsk -i action update msgdemo/uppercase target/uppercase.jar --main com.example.FunctionApp
 ----
@@ -243,8 +240,7 @@ Lets deploy the function using the following command,
 
 [source,sh,subs=attributes+]
 ----
-cd $PROJECT_HOME/
-cd integration/messaging-functions/solutions
+cd $PROJECT_HOME/integration/messaging-functions/solutions
 rm exec && rm /tmp/exec.zip
 GOOS=linux GOARCH=amd64 go build -o exec
 zip /tmp/exec.zip exec
@@ -321,8 +317,7 @@ exports.main = sendMessage;
 
 [source,sh,subs=attributes+]
 ----
-cd $PROJECT_HOME/
-cd integration/messaging-functions/solutions/sender
+cd $PROJECT_HOME/integration/messaging-functions/solutions/sender
 npm install
 ( rm -f /tmp/msgsender.zip && zip -qr /tmp/msgsender.zip * )
 wsk -i action update msgdemo/msgsender --kind nodejs:8 /tmp/msgsender.zip
@@ -378,3 +373,13 @@ wsk -i activation poll
 === Utils
 
 You can find lot examples to use `amqp/rhea` at the https://github.com/amqp/rhea[amqp/reha] which you can use to send or receive the messages.
+
+=== Cleanup
+
+To clear all actions, triggers, rules and packages that are created as part of this demo, run the following command:
+
+[source,sh,subs=attributes+]
+----
+cd $PROJECT_HOME/integration/messaging-functions/solutions/
+./cleanup.sh
+----
