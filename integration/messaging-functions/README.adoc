@@ -110,6 +110,8 @@ Lets deploy the function using the following command,
 
 [source,sh,subs=attributes+]
 ----
+cd $PROJECT_HOME/
+cd integration/messaging-functions/solutions
 wsk -i action update msgdemo/splitter split.py
 ----
 
@@ -180,6 +182,8 @@ Update the FunctionAppTest testFunction method with code:
 ===== Build Uppercase Action
 [source,sh,subs=attributes+]
 ----
+cd $PROJECT_HOME/
+cd integration/messaging-functions/solutions
 cd uppercase
 mvn clean package
 wsk -i action update msgdemo/uppercase target/uppercase.jar --main com.example.FunctionApp
@@ -239,7 +243,8 @@ Lets deploy the function using the following command,
 
 [source,sh,subs=attributes+]
 ----
-cd $PROJECT_HOME
+cd $PROJECT_HOME/
+cd integration/messaging-functions/solutions
 rm exec && rm /tmp/exec.zip
 GOOS=linux GOARCH=amd64 go build -o exec
 zip /tmp/exec.zip exec
@@ -316,6 +321,9 @@ exports.main = sendMessage;
 
 [source,sh,subs=attributes+]
 ----
+cd $PROJECT_HOME/
+cd integration/messaging-functions/solutions/sender
+npm install
 ( rm -f /tmp/msgsender.zip && zip -qr /tmp/msgsender.zip * )
 wsk -i action update msgdemo/msgsender --kind nodejs:8 /tmp/msgsender.zip
 ----
@@ -341,6 +349,7 @@ wsk -i rule update rule_splitsortucase trig_queue_99 splitsortucase {conum-guard
 cd $PROJECT_HOME
 cd integration/messaging-functions/solutions/test
 npm install rhea
+oc project msgdemo
 ----
 
 ==== Terminal I
