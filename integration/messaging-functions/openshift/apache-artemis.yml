@@ -19,6 +19,40 @@ items:
   status:
     loadBalancer: {}
 - apiVersion: v1
+  kind: Service
+  metadata:
+    annotations: {}
+    labels:
+      app: apache-artemis
+    name: apache-artemis-console
+  spec:
+    ports:
+    - name: 8661-http
+      port: 8161
+      protocol: TCP
+      targetPort: 8161
+    selector:
+      app: apache-artemis
+    type: NodePort
+  status:
+    loadBalancer: {}
+- apiVersion: route.openshift.io/v1
+  kind: Route
+  metadata:
+    annotations: {}
+    labels:
+      app: apache-artemis
+    name: apache-artemis-console
+  spec:
+    host: apache-artemis-console-myproject.192.168.64.97.nip.io
+    port:
+      targetPort: 8661-http
+    to:
+      kind: Service
+      name: apache-artemis-console
+      weight: 100
+    wildcardPolicy: None
+- apiVersion: v1
   kind: DeploymentConfig
   metadata:
     annotations: {}
